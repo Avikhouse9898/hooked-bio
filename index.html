@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hooked Bio — AI Social Bio & Post Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="Generate high-converting bios and post captions in seconds. One free try." />
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="max-w-3xl mx-auto px-4 py-10">
+    <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Hooked Bio</h1>
+    <p class="text-slate-600 mt-2">Create a punchy bio or caption for TikTok/Instagram/LinkedIn in 30 seconds.</p>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 pb-24">
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <form id="genForm" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium mb-1" for="niche">Your niche / what you do</label>
+          <input id="niche" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="e.g., fitness coach for busy dads" required />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Platform</label>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <label class="flex items-center gap-2 p-2 border rounded-xl cursor-pointer">
+              <input type="radio" name="platform" value="Instagram" checked />
+              <span>Instagram</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 border rounded-xl cursor-pointer">
+              <input type="radio" name="platform" value="TikTok" />
+              <span>TikTok</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 border rounded-xl cursor-pointer">
+              <input type="radio" name="platform" value="LinkedIn" />
+              <span>LinkedIn</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 border rounded-xl cursor-pointer">
+              <input type="radio" name="platform" value="Twitter" />
+              <span>X / Twitter</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Style</label>
+          <select id="style" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+            <option value="punchy">Punchy / High-converting</option>
+            <option value="humor">Humorous</option>
+            <option value="serious">Serious / Professional</option>
+            <option value="story">Story-driven</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Language</label>
+          <select id="lang" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1" for="extras">Add details (optional)</label>
+          <textarea id="extras" rows="3" class="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500" placeholder="audience, tone, offer, CTA..."></textarea>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-3">
+          <button id="genBtn" type="submit" class="inline-flex justify-center items-center gap-2 rounded-2xl bg-indigo-600 text-white px-5 py-3 font-medium hover:bg-indigo-700 disabled:opacity-60">
+            <span id="genText">Generate</span>
+            <svg id="spinner" class="animate-spin h-4 w-4 hidden" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+          </button>
+          <button id="copyBtn" type="button" class="rounded-2xl border px-5 py-3 font-medium hover:bg-slate-50" disabled>Copy</button>
+        </div>
+      </form>
+
+      <div id="paywall" class="hidden mt-6 p-5 border rounded-2xl bg-slate-50">
+        <h3 class="font-semibold text-lg">Free try used</h3>
+        <p class="text-slate-600 mt-1">Get unlimited generations + advanced templates.</p>
+        <a href="#" id="buyLink" class="inline-block mt-3 rounded-2xl bg-emerald-600 text-white px-5 py-3 font-medium hover:bg-emerald-700">Unlock Premium ($4.99)</a>
+      </div>
+
+      <div id="resultWrap" class="mt-6 hidden">
+        <h3 class="font-semibold text-lg mb-2">Result</h3>
+        <pre id="result" class="whitespace-pre-wrap bg-slate-900 text-slate-50 p-4 rounded-xl text-sm"></pre>
+      </div>
+      <p class="text-xs text-slate-500 mt-4">By using this site you agree to our Terms. One free generation per browser.</p>
+    </section>
+
+    <footer class="text-center text-slate-500 text-sm mt-10">
+      <p>© Hooked Bio — launch MVP</p>
+    </footer>
+  </main>
+
+  <script>
+    const genForm = document.getElementById('genForm');
+    const genBtn = document.getElementById('genBtn');
+    const genText = document.getElementById('genText');
+    const spinner = document.getElementById('spinner');
+    const resultWrap = document.getElementById('resultWrap');
+    const result = document.getElementById('result');
+    const copyBtn = document.getElementById('copyBtn');
+    const paywall = document.getElementById('paywall');
+    const buyLink = document.getElementById('buyLink');
+
+    const FREE_KEY = 'hb.free.used';
+
+    function paywallOn() {
+      paywall.classList.remove('hidden');
+      genBtn.disabled = true;
+    }
+    function paywallOff() {
+      paywall.classList.add('hidden');
+      genBtn.disabled = false;
+    }
+
+    function toggleLoading(state){
+      if(state){
+        spinner.classList.remove('hidden');
+        genText.textContent = 'Generating...';
+        genBtn.disabled = true;
+      } else {
+        spinner.classList.add('hidden');
+        genText.textContent = 'Generate';
+        genBtn.disabled = false;
+      }
+    }
+
+    copyBtn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(result.textContent);
+      copyBtn.textContent = 'Copied';
+      setTimeout(()=>copyBtn.textContent='Copy', 1200);
+    });
+
+    buyLink.addEventListener('click', (e) => {
+      // Replace with your payment link
+      // location.href = 'https://your-payment-link';
+    });
+
+    genForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const used = localStorage.getItem(FREE_KEY);
+      if(used === '1'){
+        paywallOn();
+        return;
+      }
+
+      const niche = document.getElementById('niche').value.trim();
+      const platform = document.querySelector('input[name="platform"]:checked').value;
+      const style = document.getElementById('style').value;
+      const lang = document.getElementById('lang').value;
+      const extras = document.getElementById('extras').value.trim();
+
+      const payload = { niche, platform, style, lang, extras };
+
+      toggleLoading(true);
+      resultWrap.classList.add('hidden');
+      copyBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if(!res.ok){
+          throw new Error('Request failed');
+        }
+        const data = await res.json();
+        result.textContent = data.text?.trim() || '';
+        resultWrap.classList.remove('hidden');
+        copyBtn.disabled = false;
+        localStorage.setItem(FREE_KEY, '1');
+      } catch (err) {
+        result.textContent = 'Something went wrong. Try again later.';
+        resultWrap.classList.remove('hidden');
+      } finally {
+        toggleLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>
